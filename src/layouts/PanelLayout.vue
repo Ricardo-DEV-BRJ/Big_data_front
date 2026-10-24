@@ -1,77 +1,77 @@
 <script setup lang="ts">
-  /**
-   * Estructura del panel: menú lateral con los módulos, barra superior con la
-   * fecha de corte y acciones, y barra de filtros globales (período y sucursal)
-   * que aplican a todos los módulos.
-   */
-  import { computed, onMounted, ref, watch } from 'vue'
-  import { useRoute } from 'vue-router'
-  import { useDisplay } from 'vuetify'
-  import BotonTema from '@/components/BotonTema.vue'
-  import { PERIODOS, useFiltros } from '@/composables/useFiltros'
-  import { MODULOS } from '@/modulos'
-  import { mensajeDeError, recalcular } from '@/services/metricas'
-  import { fmtEntero, fmtFecha } from '@/utils/formato'
+/**
+ * Estructura del panel: menú lateral con los módulos, barra superior con la
+ * fecha de corte y acciones, y barra de filtros globales (período y sucursal)
+ * que aplican a todos los módulos.
+ */
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import { useDisplay } from 'vuetify'
+import BotonTema from '@/components/BotonTema.vue'
+import { PERIODOS, useFiltros } from '@/composables/useFiltros'
+import { MODULOS } from '@/modulos'
+import { mensajeDeError, recalcular } from '@/services/metricas'
+import { fmtEntero, fmtFecha } from '@/utils/formato'
+import logo from '@/assets/AgroJM_logo_1x1.png'
 
-  const { estado, opciones, errorOpciones, cargarOpciones, refrescar } = useFiltros()
-  const { mdAndUp } = useDisplay()
-  const ruta = useRoute()
+const { estado, opciones, errorOpciones, cargarOpciones, refrescar } = useFiltros()
+const { mdAndUp } = useDisplay()
+const ruta = useRoute()
 
-  const menu = ref(true)
-  watch(mdAndUp, valor => {
-    menu.value = valor
-  }, { immediate: true })
+const menu = ref(true)
+watch(mdAndUp, valor => {
+  menu.value = valor
+}, { immediate: true })
 
-  const moduloActual = computed(() => MODULOS.find(m => m.ruta === ruta.name))
+const moduloActual = computed(() => MODULOS.find(m => m.ruta === ruta.name))
 
-  const sucursales = computed(() => (opciones.value?.sucursales ?? []).map(s => ({
-    title: s.sucursal,
-    value: s.sucursal,
-    subtitle: [s.ciudad, s.estado_geo].filter(Boolean).join(', '),
-  })))
+const sucursales = computed(() => (opciones.value?.sucursales ?? []).map(s => ({
+  title: s.sucursal,
+  value: s.sucursal,
+  subtitle: [s.ciudad, s.estado_geo].filter(Boolean).join(', '),
+})))
 
-  const corte = computed(() => opciones.value?.rango_fechas.hasta)
+const corte = computed(() => opciones.value?.rango_fechas.hasta)
 
-  const recalculando = ref(false)
-  const aviso = ref({ visible: false, texto: '', color: 'success' })
+const recalculando = ref(false)
+const aviso = ref({ visible: false, texto: '', color: 'success' })
 
-  function actualizar () {
-    refrescar()
-  }
+function actualizar() {
+  refrescar()
+}
 
-  function recalcularMetricas () {
-    recalculando.value = true
-    recalcular()
-      .then(r => {
-        aviso.value = {
-          visible: true,
-          color: 'success',
-          texto: `Métricas recalculadas en ${r.segundos} s · ${fmtEntero(r.filas_ventas)} ventas · corte ${fmtFecha(r.fecha_corte)}`,
-        }
-        refrescar()
-      })
-      .catch(error => {
-        aviso.value = { visible: true, color: 'error', texto: mensajeDeError(error) }
-      })
-      .finally(() => {
-        recalculando.value = false
-      })
-  }
+function recalcularMetricas() {
+  recalculando.value = true
+  recalcular()
+    .then(r => {
+      aviso.value = {
+        visible: true,
+        color: 'success',
+        texto: `Métricas recalculadas en ${r.segundos} s · ${fmtEntero(r.filas_ventas)} ventas · corte ${fmtFecha(r.fecha_corte)}`,
+      }
+      refrescar()
+    })
+    .catch(error => {
+      aviso.value = { visible: true, color: 'error', texto: mensajeDeError(error) }
+    })
+    .finally(() => {
+      recalculando.value = false
+    })
+}
 
-  onMounted(() => {
-    cargarOpciones()
-  })
+onMounted(() => {
+  cargarOpciones()
+})
 </script>
 
 <template>
   <v-navigation-drawer v-model="menu" :permanent="mdAndUp" :temporary="!mdAndUp" width="256">
     <div class="d-flex align-center ga-3 px-5 py-5">
-      <v-avatar color="primary" rounded="lg" size="38">
-        <v-icon icon="mdi-chart-box-outline" size="22" />
+      <v-avatar rounded="lg" size="70" :image="logo">
       </v-avatar>
 
       <div>
-        <div class="text-title-medium font-weight-bold">Big Data</div>
+        <div class="text-title-medium font-weight-bold">Big AgroJM</div>
         <div class="text-body-small text-medium-emphasis">Panel de ventas</div>
       </div>
     </div>
@@ -79,16 +79,8 @@
     <v-divider />
 
     <v-list class="px-2" density="comfortable" nav>
-      <v-list-item
-        v-for="m in MODULOS"
-        :key="m.ruta"
-        color="primary"
-        :prepend-icon="m.icono"
-        rounded="lg"
-        :title="m.titulo"
-        :to="`/panel/${m.ruta}`"
-        @click="!mdAndUp && (menu = false)"
-      />
+      <v-list-item v-for="m in MODULOS" :key="m.ruta" color="primary" :prepend-icon="m.icono" rounded="lg"
+        :title="m.titulo" :to="`/panel/${m.ruta}`" @click="!mdAndUp && (menu = false)" />
     </v-list>
   </v-navigation-drawer>
 
@@ -100,14 +92,8 @@
     </v-app-bar-title>
 
     <template #append>
-      <v-chip
-        v-if="corte"
-        class="me-2 d-none d-sm-flex"
-        prepend-icon="mdi-calendar-check-outline"
-        rounded="lg"
-        size="small"
-        variant="tonal"
-      >
+      <v-chip v-if="corte" class="me-2 d-none d-sm-flex" prepend-icon="mdi-calendar-check-outline" rounded="lg"
+        size="small" variant="tonal">
         Datos al {{ fmtFecha(corte) }}
       </v-chip>
 
@@ -115,22 +101,13 @@
 
       <v-menu>
         <template #activator="{ props: activador }">
-          <v-btn
-            aria-label="Más acciones"
-            icon="mdi-dots-vertical"
-            v-bind="activador"
-            :loading="recalculando"
-            variant="text"
-          />
+          <v-btn aria-label="Más acciones" icon="mdi-dots-vertical" v-bind="activador" :loading="recalculando"
+            variant="text" />
         </template>
 
         <v-list density="compact">
-          <v-list-item
-            prepend-icon="mdi-database-refresh-outline"
-            subtitle="Vuelve a leer el data lake"
-            title="Recalcular métricas"
-            @click="recalcularMetricas"
-          />
+          <v-list-item prepend-icon="mdi-database-refresh-outline" subtitle="Vuelve a leer el data lake"
+            title="Recalcular métricas" @click="recalcularMetricas" />
         </v-list>
       </v-menu>
 
@@ -141,73 +118,31 @@
   <v-main>
     <div class="barra-filtros px-4 px-md-6 py-3">
       <div class="d-flex flex-wrap align-center ga-3 contenido">
-        <v-select
-          v-model="estado.periodo"
-          class="filtro"
-          density="compact"
-          hide-details
-          item-title="titulo"
-          item-value="valor"
-          :items="PERIODOS"
-          label="Período"
-          prepend-inner-icon="mdi-calendar-range"
-          variant="outlined"
-        />
+        <v-select v-model="estado.periodo" class="filtro" density="compact" hide-details item-title="titulo"
+          item-value="valor" :items="PERIODOS" label="Período" prepend-inner-icon="mdi-calendar-range"
+          variant="outlined" />
 
         <template v-if="estado.periodo === 'personalizado'">
-          <v-text-field
-            v-model="estado.desdePersonalizado"
-            class="filtro-fecha"
-            density="compact"
-            hide-details
-            label="Desde"
-            :max="estado.hastaPersonalizado || corte || undefined"
-            :min="opciones?.rango_fechas.desde || undefined"
-            type="date"
-            variant="outlined"
-          />
+          <v-text-field v-model="estado.desdePersonalizado" class="filtro-fecha" density="compact" hide-details
+            label="Desde" :max="estado.hastaPersonalizado || corte || undefined"
+            :min="opciones?.rango_fechas.desde || undefined" type="date" variant="outlined" />
 
-          <v-text-field
-            v-model="estado.hastaPersonalizado"
-            class="filtro-fecha"
-            density="compact"
-            hide-details
-            label="Hasta"
-            :max="corte || undefined"
-            :min="estado.desdePersonalizado || undefined"
-            type="date"
-            variant="outlined"
-          />
+          <v-text-field v-model="estado.hastaPersonalizado" class="filtro-fecha" density="compact" hide-details
+            label="Hasta" :max="corte || undefined" :min="estado.desdePersonalizado || undefined" type="date"
+            variant="outlined" />
         </template>
 
-        <v-select
-          v-model="estado.sucursal"
-          class="filtro"
-          clearable
-          density="compact"
-          hide-details
-          item-props
-          :items="sucursales"
-          label="Sucursal"
-          persistent-placeholder
-          placeholder="Todas"
-          prepend-inner-icon="mdi-store-outline"
-          variant="outlined"
-        />
+        <v-select v-model="estado.sucursal" class="filtro" clearable density="compact" hide-details item-props
+          :items="sucursales" label="Sucursal" persistent-placeholder placeholder="Todas"
+          prepend-inner-icon="mdi-store-outline" variant="outlined" />
 
         <span class="text-body-small text-medium-emphasis">
           {{ moduloActual?.descripcion }}
         </span>
       </div>
 
-      <v-alert
-        v-if="errorOpciones"
-        class="mt-3 contenido"
-        density="compact"
-        :text="`No se pudo conectar con la API: ${errorOpciones}`"
-        type="error"
-        variant="tonal"
-      />
+      <v-alert v-if="errorOpciones" class="mt-3 contenido" density="compact"
+        :text="`No se pudo conectar con la API: ${errorOpciones}`" type="error" variant="tonal" />
     </div>
 
     <div class="px-4 px-md-6 pb-8 contenido">
