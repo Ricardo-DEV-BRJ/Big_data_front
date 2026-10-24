@@ -12,7 +12,7 @@ Reporte CSV ──► API Big_data_TEG (:3000) ──► MinIO (Parquet) ──�
 
 ## Stack
 
-Vue 3 + Vite, Vuetify 4, Chart.js (`vue-chartjs`), axios, TypeScript, npm.
+Vue 3 + Vite, Vuetify 4, ApexCharts (`vue3-apexcharts`), axios, TypeScript, npm.
 
 ## Puesta en marcha
 
@@ -34,24 +34,98 @@ README de Big_data_TEG.
 | `npm run type-check` | Verificación de tipos con vue-tsc |
 | `npm run lint` / `npm run lint:fix` | ESLint |
 
+## El panel
+
+Abre en `http://localhost:8080/panel/resumen` (`/` y `/Dashboard` redirigen ahí). Tiene un menú lateral
+con un módulo por área del negocio, una barra superior (fecha de corte de los datos, **Actualizar**,
+**Recalcular métricas** y tema claro/oscuro) y una barra de **filtros globales** que aplica a todos los
+módulos: período (último mes, 3, 6, 12 meses, todo o personalizado) y sucursal. Algunas tarjetas tienen
+además sus propios controles (orden, categoría, tipo de cliente…).
+
+| Módulo | Qué muestra |
+|---|---|
+| **Resumen** | KPI con tendencia mensual, evolución de venta y margen, meta del mes (medidor), ventas por segmento y sucursal, productos líderes |
+| **Ventas** | Bruta → neta, IVA, tendencia por día/semana/mes, efecto quincena, avance del mes contra la meta, crecimiento mensual, día de la semana, horas pico (mapa de calor), descuentos e IVA por mes |
+| **Productos** | Ranking por venta, unidades o margen, categorías (treemap), Pareto y ABC, rangos de precio, marcas, devoluciones y productos sin ventas |
+| **Clientes** | Activos y nuevos, concentración, tipos de cliente (V/J/E/G), segmentos RFM con acción sugerida, retención por cohorte y ficha buscable de clientes |
+| **Cobranza** | Cartera y vencido, antigüedad por tramo y tipo de cliente, flujo de cobro esperado, días de cobro, cartera por sucursal y deudores |
+| **Equipo comercial** | Cumplimiento de metas, venta contra meta por vendedor, medidores por sucursal, desempeño de vendedores, sucursales y metas del mes |
+| **Pagos y monedas** | Peso del dólar, comisiones bancarias, pérdida cambiaria, métodos de pago, USD frente a Bs por mes y tasa de cambio |
+| **Inventario** | Valor, rotación, quiebres de stock, venta perdida y detalle por producto y sucursal |
+| **Proveedores** | Compras, órdenes en tránsito, puntualidad, compras frente a ventas y margen |
+| **Calidad de datos** | Reglas de calidad por dataset y historial de recálculos |
+
+Estilo inspirado en las plantillas de dashboard de ApexCharts: tarjetas KPI con mini gráfico, áreas
+con degradado, donas, medidores radiales, mapas de calor y treemaps. Los colores de las series siguen
+una paleta categórica validada para daltonismo en claro y oscuro; los colores de estado (bien, atención,
+crítico) siempre van con ícono y texto.
+
 ## Estructura
 
-| Archivo | Qué hace |
-|---|---|
-| `src/main.ts` | Arranque: registra los plugins y monta `App.vue` |
-| `src/plugins/` | Vuetify (temas, íconos) y router |
-| `src/router/index.ts` | Rutas: `/` (inicio) y `/Dashboard` |
-| `src/pages/Dashboard.vue` | Dashboard de ventas: KPI, gráfico de barras y ranking del top de productos |
-| `src/components/BotonTema.vue` | Botón para cambiar entre tema claro y oscuro |
-| `src/theme/temaJM.ts` | Temas `light_JM` y `dark_JM` |
-| `src/config/api.ts` | `apiCall()`: cliente axios hacia la API |
+Cada módulo vive en su propia carpeta con su pantalla y sus componentes:
+
+```
+src/
+├── modulos/
+│   ├── index.ts                  Lista de módulos: alimenta el menú y las rutas
+│   ├── resumen/
+│   │   ├── ResumenModulo.vue     Pantalla del módulo (arma la cuadrícula)
+│   │   └── components/           Una tarjeta por archivo (KpisResumen, EvolucionVentas, MetaMes…)
+│   ├── ventas/  productos/  clientes/  cobranza/  comercial/
+│   └── pagos/  inventario/  proveedores/  calidad/
+├── layouts/PanelLayout.vue       Menú lateral, barra superior y filtros globales
+├── components/
+│   ├── comunes/                  TarjetaKpi, TarjetaPanel (carga / error / vacío), Grafico
+│   └── BotonTema.vue             Tema claro / oscuro
+├── composables/
+│   ├── useFiltros.ts             Filtros globales (período, sucursal) y opciones de la API
+│   ├── useConsulta.ts            Consulta reactiva: se repite al cambiar filtros
+│   └── useGrafico.ts             Estilo base de ApexCharts y paletas según el tema
+├── services/metricas.ts          Llamadas a /api/metricas y tipos de respuesta
+├── utils/formato.ts              Montos, porcentajes, fechas (es-VE)
+├── router/index.ts               /panel/<módulo>
+├── theme/temaJM.ts               Temas light_JM y dark_JM
+└── config/api.ts                 apiCall(): cliente axios hacia la API
+```
+
+### Agregar una tarjeta
+
+```vue
+<script setup lang="ts">
+  import type { PuntoMensual } from '@/services/metricas'
+  import { computed } from 'vue'
+  import Grafico from '@/components/comunes/Grafico.vue'
+  import TarjetaPanel from '@/components/comunes/TarjetaPanel.vue'
+  import { useConsulta } from '@/composables/useConsulta'
+  import { useFiltros } from '@/composables/useFiltros'
+  import { useGrafico } from '@/composables/useGrafico'
+  import { obtener } from '@/services/metricas'
+
+  const { filtros } = useFiltros()
+  const { datos, cargando, error, recargar } = useConsulta(() => obtener<PuntoMensual[]>('/ventas/mensuales', filtros.value))
+  const { opciones } = useGrafico()
+  const opcionesGrafico = computed(() => opciones({ xaxis: { categories: (datos.value ?? []).map(m => m.mes) } }))
+</script>
+
+<template>
+  <TarjetaPanel :cargando="cargando" :error="error" titulo="Mi tarjeta" @reintentar="recargar">
+    <Grafico :opciones="opcionesGrafico" :series="[{ name: 'Venta neta', data: (datos ?? []).map(m => m.venta_neta) }]" tipo="bar" />
+  </TarjetaPanel>
+</template>
+```
+
+- Usa `<Grafico>` y no `<apexchart>` directo: `vue3-apexcharts` pierde los formateadores (funciones)
+  al actualizar las opciones; `Grafico` vuelve a montar el gráfico cuando cambian.
+- `useConsulta(consulta, dependencias)` repite la consulta cuando cambian los filtros globales o lo que
+  devuelva `dependencias` (p. ej. el selector de orden de la tarjeta).
+- Para una pantalla nueva, crea `src/modulos/<módulo>/<Modulo>Modulo.vue` y agrégala a `src/modulos/index.ts`.
 
 ## Llamar a la API
 
 ```ts
 import { apiCall } from '@/config/api'
 
-apiCall('metricas')                                   // top de productos (lo usa el Dashboard)
+apiCall('metricas')                                   // top de productos
 apiCall('metricas/resumen?mes=2026-09')               // KPI del mes
 apiCall('metricas/ventas/mensuales?sucursal=Maracaibo')
 apiCall('metricas/opciones')                          // valores para los filtros
@@ -68,5 +142,5 @@ Todas las rutas de métricas y sus filtros (`desde`, `hasta`, `mes`, `sucursal`,
 
 ## Pendiente
 
-El Dashboard solo muestra el top de productos. El resto de métricas (resumen, series, clientes,
-cobranza, inventario, vendedores…) ya está disponible en la API y falta construir sus pantallas.
+- Sin autenticación (igual que la API).
+- El paquete principal pesa ~1,4 MB (440 kB comprimido) por Vuetify y ApexCharts; los módulos ya se cargan por separado.
