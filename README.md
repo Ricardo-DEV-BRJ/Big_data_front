@@ -1,78 +1,146 @@
-# big-data-front
+# Big Data — Front
 
-Scaffolded with Vuetify CLI.
+Dashboard web del prototipo Big Data. Muestra las métricas de ventas que calcula la API
+(**Big_data_TEG**). La documentación completa del proyecto (arquitectura, ingesta de CSV, data lake,
+cálculo de métricas y todos los endpoints) está en el README de **Big_data_TEG**.
 
-## ❗️ Documentation
+```
+Reporte CSV ──► API Big_data_TEG (:3000) ──► MinIO (Parquet) ──► DuckDB ──► MariaDB (métricas)
+                                                                               │
+                                     Este front (:8080) ◄── GET /api/metricas/... ┘
+```
 
-- Primary docs: https://vuetifyjs.com/
-- Getting started guide: https://vuetifyjs.com/en/getting-started/installation/
-- Community support: https://community.vuetifyjs.com/
-- Issue tracker: https://issues.vuetifyjs.com/
+## Stack
 
-## 🧱 Stack
+Vue 3 + Vite, Vuetify 4, ApexCharts (`vue3-apexcharts`), axios, TypeScript, npm.
 
-- Framework: Vue 3 + Vite
-- UI Library: Vuetify
-- Language: TypeScript
-- Package manager: npm
-
-## 🧭 Start Here
-
-- Main entry: `src/main.ts`
-- Main app component: `src/App.vue`
-- Main styles: `src/styles/`
-- Plugin setup: `src/plugins/`
-
-## 📁 Project Structure
-
-- `src/main.ts` — application entry point
-- `src/App.vue` — root component
-- `src/components/` — reusable Vue components
-- `src/plugins/` — plugin registration and setup
-- `src/styles/` — global styles and theme settings
-- `public/` — static public files
-
-## ✨ Enabled Features
-
-- ESLint
-- File Router
-
-## 💿 Install
-
-Use your selected package manager (npm) to install dependencies:
+## Puesta en marcha
 
 ```bash
 npm install
+cp .env.example .env      # VITE_API_URL = http://localhost:3000/api/
+npm run dev               # http://localhost:8080
 ```
 
-## 🚀 Quick Start
+La API debe estar corriendo y su variable `CORS_PORT` debe ser el origen de este front
+(`http://localhost:8080`). Para tener datos, sigue la sección *Primer uso con datos de prueba* del
+README de Big_data_TEG.
 
-```bash
-npm install
-npm run dev
+| Script | Uso |
+|---|---|
+| `npm run dev` | Servidor de desarrollo en el puerto 8080 |
+| `npm run build` | Verifica tipos y genera `dist/` |
+| `npm run preview` | Sirve la versión de `dist/` |
+| `npm run type-check` | Verificación de tipos con vue-tsc |
+| `npm run lint` / `npm run lint:fix` | ESLint |
+
+## El panel
+
+Abre en `http://localhost:8080/panel/resumen` (`/` y `/Dashboard` redirigen ahí). Tiene un menú lateral
+con un módulo por área del negocio, una barra superior (fecha de corte de los datos, **Actualizar**,
+**Recalcular métricas** y tema claro/oscuro) y una barra de **filtros globales** que aplica a todos los
+módulos: período (último mes, 3, 6, 12 meses, todo o personalizado) y sucursal. Algunas tarjetas tienen
+además sus propios controles (orden, categoría, tipo de cliente…).
+
+| Módulo | Qué muestra |
+|---|---|
+| **Resumen** | KPI con tendencia mensual, evolución de venta y margen, meta del mes (medidor), ventas por segmento y sucursal, productos líderes |
+| **Ventas** | Bruta → neta, IVA, tendencia por día/semana/mes, efecto quincena, avance del mes contra la meta, crecimiento mensual, día de la semana, horas pico (mapa de calor), descuentos e IVA por mes |
+| **Productos** | Ranking por venta, unidades o margen, categorías (treemap), Pareto y ABC, rangos de precio, marcas, devoluciones y productos sin ventas |
+| **Clientes** | Activos y nuevos, concentración, tipos de cliente (V/J/E/G), segmentos RFM con acción sugerida, retención por cohorte y ficha buscable de clientes |
+| **Cobranza** | Cartera y vencido, antigüedad por tramo y tipo de cliente, flujo de cobro esperado, días de cobro, cartera por sucursal y deudores |
+| **Equipo comercial** | Cumplimiento de metas, venta contra meta por vendedor, medidores por sucursal, desempeño de vendedores, sucursales y metas del mes |
+| **Pagos y monedas** | Peso del dólar, comisiones bancarias, pérdida cambiaria, métodos de pago, USD frente a Bs por mes y tasa de cambio |
+| **Inventario** | Valor, rotación, quiebres de stock, venta perdida y detalle por producto y sucursal |
+| **Proveedores** | Compras, órdenes en tránsito, puntualidad, compras frente a ventas y margen |
+| **Calidad de datos** | Reglas de calidad por dataset y historial de recálculos |
+
+Estilo inspirado en las plantillas de dashboard de ApexCharts: tarjetas KPI con mini gráfico, áreas
+con degradado, donas, medidores radiales, mapas de calor y treemaps. Los colores de las series siguen
+una paleta categórica validada para daltonismo en claro y oscuro; los colores de estado (bien, atención,
+crítico) siempre van con ícono y texto.
+
+## Estructura
+
+Cada módulo vive en su propia carpeta con su pantalla y sus componentes:
+
+```
+src/
+├── modulos/
+│   ├── index.ts                  Lista de módulos: alimenta el menú y las rutas
+│   ├── resumen/
+│   │   ├── ResumenModulo.vue     Pantalla del módulo (arma la cuadrícula)
+│   │   └── components/           Una tarjeta por archivo (KpisResumen, EvolucionVentas, MetaMes…)
+│   ├── ventas/  productos/  clientes/  cobranza/  comercial/
+│   └── pagos/  inventario/  proveedores/  calidad/
+├── layouts/PanelLayout.vue       Menú lateral, barra superior y filtros globales
+├── components/
+│   ├── comunes/                  TarjetaKpi, TarjetaPanel (carga / error / vacío), Grafico
+│   └── BotonTema.vue             Tema claro / oscuro
+├── composables/
+│   ├── useFiltros.ts             Filtros globales (período, sucursal) y opciones de la API
+│   ├── useConsulta.ts            Consulta reactiva: se repite al cambiar filtros
+│   └── useGrafico.ts             Estilo base de ApexCharts y paletas según el tema
+├── services/metricas.ts          Llamadas a /api/metricas y tipos de respuesta
+├── utils/formato.ts              Montos, porcentajes, fechas (es-VE)
+├── router/index.ts               /panel/<módulo>
+├── theme/temaJM.ts               Temas light_JM y dark_JM
+└── config/api.ts                 apiCall(): cliente axios hacia la API
 ```
 
-## 🏗️ Build
+### Agregar una tarjeta
 
-```bash
-npm run build
+```vue
+<script setup lang="ts">
+  import type { PuntoMensual } from '@/services/metricas'
+  import { computed } from 'vue'
+  import Grafico from '@/components/comunes/Grafico.vue'
+  import TarjetaPanel from '@/components/comunes/TarjetaPanel.vue'
+  import { useConsulta } from '@/composables/useConsulta'
+  import { useFiltros } from '@/composables/useFiltros'
+  import { useGrafico } from '@/composables/useGrafico'
+  import { obtener } from '@/services/metricas'
+
+  const { filtros } = useFiltros()
+  const { datos, cargando, error, recargar } = useConsulta(() => obtener<PuntoMensual[]>('/ventas/mensuales', filtros.value))
+  const { opciones } = useGrafico()
+  const opcionesGrafico = computed(() => opciones({ xaxis: { categories: (datos.value ?? []).map(m => m.mes) } }))
+</script>
+
+<template>
+  <TarjetaPanel :cargando="cargando" :error="error" titulo="Mi tarjeta" @reintentar="recargar">
+    <Grafico :opciones="opcionesGrafico" :series="[{ name: 'Venta neta', data: (datos ?? []).map(m => m.venta_neta) }]" tipo="bar" />
+  </TarjetaPanel>
+</template>
 ```
 
-## 🧪 Available Scripts
+- Usa `<Grafico>` y no `<apexchart>` directo: `vue3-apexcharts` pierde los formateadores (funciones)
+  al actualizar las opciones; `Grafico` vuelve a montar el gráfico cuando cambian.
+- `useConsulta(consulta, dependencias)` repite la consulta cuando cambian los filtros globales o lo que
+  devuelva `dependencias` (p. ej. el selector de orden de la tarjeta).
+- Para una pantalla nueva, crea `src/modulos/<módulo>/<Modulo>Modulo.vue` y agrégala a `src/modulos/index.ts`.
 
-- `npm run dev`
-- `npm run build`
-- `npm run preview`
-- `npm run build-only`
-- `npm run type-check`
-- `npm run lint`
-- `npm run lint:fix`
+## Llamar a la API
 
-## 💪 Support Vuetify Development
+```ts
+import { apiCall } from '@/config/api'
 
-This project uses Vuetify - an MIT licensed Open Source project. We are glad to welcome contributors and any support for ongoing development:
+apiCall('metricas')                                   // top de productos
+apiCall('metricas/resumen?mes=2026-09')               // KPI del mes
+apiCall('metricas/ventas/mensuales?sucursal=Maracaibo')
+apiCall('metricas/opciones')                          // valores para los filtros
+apiCall('metricas/recalcular', {}, 'POST')            // recalcula las métricas
+```
 
-- Contribute to Vuetify and ecosystem projects: https://github.com/vuetifyjs
-- Request enterprise support: https://support.vuetifyjs.com/
-- Sponsor on GitHub: https://github.com/sponsors/vuetifyjs
-- Support on Open Collective: https://opencollective.com/vuetify
+`apiCall(endpoint, data, method)` concatena `endpoint` a `VITE_API_URL`, envía cookies
+(`withCredentials`) y, si existe la cookie `token`, el encabezado `Authorization: Bearer <token>`.
+Devuelve la respuesta de axios: los datos vienen en `result.data`; si hay error, el mensaje viene en
+`error.response.data.error`.
+
+Todas las rutas de métricas y sus filtros (`desde`, `hasta`, `mes`, `sucursal`, `tipo`, `categoria`,
+`limite`, `orden`…) están en la sección *API de métricas* del README de Big_data_TEG.
+
+## Pendiente
+
+- Sin autenticación (igual que la API).
+- El paquete principal pesa ~1,4 MB (440 kB comprimido) por Vuetify y ApexCharts; los módulos ya se cargan por separado.
