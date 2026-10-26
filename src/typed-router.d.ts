@@ -38,6 +38,20 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
+    '/CambiarPasswordView': RouteRecordInfo<
+      '/CambiarPasswordView',
+      '/CambiarPasswordView',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
+    '/LoginView': RouteRecordInfo<
+      '/LoginView',
+      '/LoginView',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
   }
 
   /**
@@ -54,6 +68,22 @@ declare module 'vue-router/auto-routes' {
     'src/pages/index.vue': {
       routes:
         | '/'
+      views:
+        | never
+      pathParamNames:
+        | never
+    }
+    'src/pages/CambiarPasswordView.vue': {
+      routes:
+        | '/CambiarPasswordView'
+      views:
+        | never
+      pathParamNames:
+        | never
+    }
+    'src/pages/LoginView.vue': {
+      routes:
+        | '/LoginView'
       views:
         | never
       pathParamNames:

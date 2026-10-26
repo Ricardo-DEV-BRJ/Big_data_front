@@ -12,7 +12,7 @@
   const resumen = useConsulta(() => obtener<Resumen>('/resumen', filtros.value))
   const mensual = useConsulta(() => obtener<PuntoMensual[]>('/ventas/mensuales', filtros.value))
 
-  const meses = computed(() => mensual.datos.value ?? [])
+  const meses = computed(() => Array.isArray(mensual.datos.value) ? mensual.datos.value : [])
   const etiquetas = computed(() => meses.value.map(m => fmtMes(m.mes)))
   const serie = (f: (m: PuntoMensual) => number | null) => meses.value.map(m => Number(f(m) ?? 0))
   const ultimo = computed(() => meses.value.at(-1))

@@ -14,7 +14,7 @@
   const { datos, cargando, error, recargar } = useConsulta(() => obtener<PuntoMensual[]>('/ventas/mensuales', filtros.value))
   const { opciones } = useGrafico()
 
-  const filas = computed(() => datos.value ?? [])
+  const filas = computed(() => Array.isArray(datos.value) ? datos.value : [])
   const series = computed(() => [
     { name: 'Venta neta', data: filas.value.map(m => m.venta_neta) },
     { name: 'Margen bruto', data: filas.value.map(m => m.margen) },

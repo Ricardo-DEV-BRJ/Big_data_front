@@ -11,7 +11,7 @@
   const { filtros } = useFiltros()
   const { datos, cargando, error, recargar } = useConsulta(() => obtener<Producto[]>('/productos', { ...filtros.value, limite: 6 }))
 
-  const filas = computed(() => datos.value ?? [])
+  const filas = computed(() => Array.isArray(datos.value) ? datos.value : [])
   const maximo = computed(() => Math.max(...filas.value.map(f => f.participacion_pct ?? 0), 1))
 </script>
 

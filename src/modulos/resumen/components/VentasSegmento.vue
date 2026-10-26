@@ -17,7 +17,7 @@
   const { datos, cargando, error, recargar } = useConsulta(() => obtener<Segmento[]>('/segmentos', filtros.value))
   const { opciones, series } = useGrafico()
 
-  const filas = computed(() => [...(datos.value ?? [])].toSorted((a, b) => TIPOS.indexOf(a.tipo_cliente) - TIPOS.indexOf(b.tipo_cliente)))
+  const filas = computed(() => [...(Array.isArray(datos.value) ? datos.value : [])].toSorted((a, b) => TIPOS.indexOf(a.tipo_cliente) - TIPOS.indexOf(b.tipo_cliente)))
   const total = computed(() => filas.value.reduce((s, f) => s + f.venta_neta, 0))
 
   const opcionesGrafico = computed(() => opciones({

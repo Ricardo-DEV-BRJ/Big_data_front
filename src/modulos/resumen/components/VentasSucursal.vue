@@ -15,7 +15,8 @@
   const { datos, cargando, error, recargar } = useConsulta(() => obtener<Sucursal[]>('/sucursales', rango.value))
   const { opciones, tinta } = useGrafico()
 
-  const filas = computed(() => datos.value ?? [])
+  const filas = computed(() => Array.isArray(datos.value) ? datos.value : [])
+  const seriesGrafico = computed(() => [{ name: 'Venta neta', data: filas.value.map(f => f.venta_neta) }])
 
   const opcionesGrafico = computed(() => opciones({
     chart: { type: 'bar' },
@@ -56,7 +57,7 @@
       :alto="300"
       descripcion="Barras horizontales de venta neta por sucursal"
       :opciones="opcionesGrafico"
-      :series="[{ name: 'Venta neta', data: filas.map(f => f.venta_neta) }]"
+      :series="seriesGrafico"
       tipo="bar"
     />
   </TarjetaPanel>

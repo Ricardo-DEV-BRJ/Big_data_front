@@ -5,11 +5,12 @@
  * que aplican a todos los módulos.
  */
 import { computed, onMounted, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useDisplay } from 'vuetify'
 import BotonTema from '@/components/BotonTema.vue'
 import { PERIODOS, useFiltros } from '@/composables/useFiltros'
 import { MODULOS } from '@/modulos'
+import { cerrarSesion, usuarioActual } from '@/services/auth'
 import { mensajeDeError, recalcular } from '@/services/metricas'
 import { fmtEntero, fmtFecha } from '@/utils/formato'
 import logo from '@/assets/AgroJM_logo_1x1.png'
@@ -17,6 +18,8 @@ import logo from '@/assets/AgroJM_logo_1x1.png'
 const { estado, opciones, errorOpciones, cargarOpciones, refrescar } = useFiltros()
 const { mdAndUp } = useDisplay()
 const ruta = useRoute()
+const router = useRouter()
+const usuario = usuarioActual()
 
 const menu = ref(true)
 watch(mdAndUp, valor => {
@@ -24,6 +27,7 @@ watch(mdAndUp, valor => {
 }, { immediate: true })
 
 const moduloActual = computed(() => MODULOS.find(m => m.ruta === ruta.name))
+const modulosPermitidos = computed(() => MODULOS.filter(m => usuario && m.roles.includes(usuario.rol)))
 
 const sucursales = computed(() => (opciones.value?.sucursales ?? []).map(s => ({
   title: s.sucursal,
@@ -31,13 +35,18 @@ const sucursales = computed(() => (opciones.value?.sucursales ?? []).map(s => ({
   subtitle: [s.ciudad, s.estado_geo].filter(Boolean).join(', '),
 })))
 
-const corte = computed(() => opciones.value?.rango_fechas.hasta)
+const corte = computed(() => opciones.value?.rango_fechas?.hasta ?? null)
 
 const recalculando = ref(false)
 const aviso = ref({ visible: false, texto: '', color: 'success' })
 
 function actualizar() {
   refrescar()
+}
+
+function salir() {
+  cerrarSesion()
+  void router.replace('/login')
 }
 
 function recalcularMetricas() {
@@ -79,7 +88,7 @@ onMounted(() => {
     <v-divider />
 
     <v-list class="px-2" density="comfortable" nav>
-      <v-list-item v-for="m in MODULOS" :key="m.ruta" color="primary" :prepend-icon="m.icono" rounded="lg"
+      <v-list-item v-for="m in modulosPermitidos" :key="m.ruta" color="primary" :prepend-icon="m.icono" rounded="lg"
         :title="m.titulo" :to="`/panel/${m.ruta}`" @click="!mdAndUp && (menu = false)" />
     </v-list>
   </v-navigation-drawer>
@@ -106,8 +115,9 @@ onMounted(() => {
         </template>
 
         <v-list density="compact">
-          <v-list-item prepend-icon="mdi-database-refresh-outline" subtitle="Vuelve a leer el data lake"
+          <v-list-item v-if="usuario?.rol === 'administrador'" prepend-icon="mdi-database-refresh-outline" subtitle="Vuelve a leer el data lake"
             title="Recalcular métricas" @click="recalcularMetricas" />
+          <v-list-item prepend-icon="mdi-logout" title="Cerrar sesión" @click="salir" />
         </v-list>
       </v-menu>
 
