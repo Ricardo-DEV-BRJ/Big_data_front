@@ -17,7 +17,11 @@ interface RespuestaListado {
   total: number
 }
 
-const roles: Rol[] = ['vendedor', 'gerente', 'administrador']
+const roles: [{ title: string, value: Rol }] = [
+  { title: 'Administrador', value: 'administrador' },
+  { title: 'Vendedor', value: 'vendedor' },
+  { title: 'Gerente', value: 'gerente' }
+]
 const usuarios = ref<UsuarioListado[]>([])
 const email = ref('')
 const password = ref('')
@@ -26,6 +30,8 @@ const buscando = ref('')
 const error = ref('')
 const aviso = ref('')
 const cargando = ref(false)
+const dialogoDesactivarUsuario = ref(false)
+const usuarioAEliminar = ref<UsuarioListado | null>(null)
 
 async function cargarUsuarios() {
   cargando.value = true
@@ -56,13 +62,20 @@ async function crearUsuario() {
   }
 }
 
-async function desactivarUsuario(usuario: UsuarioListado) {
-  if (!window.confirm(`¿Desactivar la cuenta de ${usuario.email}?`)) return
-  error.value = ''
-  aviso.value = ''
+function abrirDialogoDesactivarUsuario(usuario: UsuarioListado) {
+  usuarioAEliminar.value = usuario
+  dialogoDesactivarUsuario.value = true
+}
+
+async function desactivarUsuario() {
+  const usuario = usuarioAEliminar.value
+  if (!usuario) return
+
   try {
     await apiCall(`auth/usuarios/${usuario.id}`, {}, 'DELETE')
     aviso.value = 'La cuenta fue desactivada.'
+    dialogoDesactivarUsuario.value = false
+    usuarioAEliminar.value = null
     await cargarUsuarios()
   } catch (err) {
     error.value = mensajeDeError(err)
@@ -84,10 +97,10 @@ onMounted(cargarUsuarios)
         <v-alert v-if="aviso" class="mb-4" :text="aviso" type="success" variant="tonal" />
         <v-form class="d-flex flex-wrap align-start ga-3" @submit.prevent="crearUsuario">
           <v-text-field v-model.trim="email" autocomplete="off" class="flex-grow-1" label="Correo electrónico"
-            required type="email" />
+            required type="email" variant="solo-filled" />
           <v-text-field v-model="password" autocomplete="new-password" label="Contraseña temporal"
-            minlength="8" required type="password" />
-          <v-select v-model="rol" :items="roles" label="Rol" />
+            minlength="8" required type="password" variant="solo-filled" />
+          <v-select v-model="rol" :items="roles" label="Rol" variant="solo-filled" class="text-capitalize"  />
           <v-btn class="mt-2" color="primary" type="submit">Crear usuario</v-btn>
         </v-form>
       </v-card-text>
@@ -98,11 +111,11 @@ onMounted(cargarUsuarios)
         <span>Usuarios</span>
         <v-spacer />
         <v-text-field v-model="buscando" clearable density="compact" hide-details label="Buscar por email o rol"
-          prepend-inner-icon="mdi-magnify" style="max-width: 320px" @keyup.enter="cargarUsuarios"
+          prepend-inner-icon="mdi-magnify" style="max-width: 320px" variant="solo-filled" @keyup.enter="cargarUsuarios"
           @click:clear="cargarUsuarios" />
-        <v-btn :loading="cargando" variant="tonal" @click="cargarUsuarios">Buscar</v-btn>
+        <v-btn :loading="cargando" variant="tonal"  @click="cargarUsuarios">Buscar</v-btn>
       </v-card-title>
-      <v-data-table :headers="[
+      <v-data-table class="text-capitalize" :headers="[
         { title: 'Correo', key: 'email' },
         { title: 'Rol', key: 'rol' },
         { title: 'Cambio de contraseña', key: 'must_change_password' },
@@ -117,9 +130,24 @@ onMounted(cargarUsuarios)
         </template>
         <template #item.acciones="{ item }">
           <v-btn aria-label="Desactivar usuario" color="error" icon="mdi-account-off-outline" size="small"
-            variant="text" @click="desactivarUsuario(item)" />
+            variant="text" @click="abrirDialogoDesactivarUsuario(item)" />
         </template>
       </v-data-table>
     </v-card>
   </div>
+  <v-dialog v-model="dialogoDesactivarUsuario" max-width="500" >
+    <v-card class="pa-2">
+      <v-card-title>Desactivar usuario</v-card-title>
+      <v-card-text>
+        <p class="text-body-2 text-medium-emphasis mb-4">
+          ¿Está seguro de que desea desactivar la cuenta de este usuario? Esta acción no se puede deshacer.
+        </p>
+      </v-card-text>
+      <v-card-actions>
+        <v-spacer />
+        <v-btn color="primary" variant="outlined" @click="dialogoDesactivarUsuario = false">Cancelar</v-btn>
+        <v-btn color="error" variant="tonal" @click="desactivarUsuario()">Desactivar</v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 </template>

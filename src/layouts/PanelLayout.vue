@@ -128,7 +128,7 @@ onMounted(() => {
   <v-main>
     <div class="barra-filtros px-4 px-md-6 py-3">
       <div class="d-flex flex-wrap align-center ga-3 contenido">
-        <v-select v-model="estado.periodo" class="filtro" density="compact" hide-details item-title="titulo"
+        <v-select v-model="estado.periodo" class="filtro" density="compact" hide-details item-title="titulo" v-if="moduloActual?.titulo !== 'Usuarios' "
           item-value="valor" :items="PERIODOS" label="Período" prepend-inner-icon="mdi-calendar-range"
           variant="outlined" />
 
@@ -142,11 +142,11 @@ onMounted(() => {
             variant="outlined" />
         </template>
 
-        <v-select v-model="estado.sucursal" class="filtro" clearable density="compact" hide-details item-props
+        <v-select v-model="estado.sucursal" class="filtro" clearable density="compact" hide-details item-props v-if="moduloActual?.titulo !== 'Usuarios' "
           :items="sucursales" label="Sucursal" persistent-placeholder placeholder="Todas"
           prepend-inner-icon="mdi-store-outline" variant="outlined" />
 
-        <span class="text-body-small text-medium-emphasis">
+        <span class="text-body-small text-medium-emphasis" v-if="moduloActual?.titulo !== 'Usuarios' ">
           {{ moduloActual?.descripcion }}
         </span>
       </div>

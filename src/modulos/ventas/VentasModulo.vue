@@ -1,6 +1,7 @@
 <script setup lang="ts">
   // Módulo Ventas: evolución, estacionalidad, horas pico, avance del mes, descuentos e IVA.
-  import AvanceMes from './components/AvanceMes.vue'
+  import { usuarioActual } from '@/services/auth.ts'
+import AvanceMes from './components/AvanceMes.vue'
   import CrecimientoMensual from './components/CrecimientoMensual.vue'
   import Descuentos from './components/Descuentos.vue'
   import DiaSemana from './components/DiaSemana.vue'
@@ -21,7 +22,7 @@
     <v-col cols="12" lg="6"><CrecimientoMensual /></v-col>
     <v-col cols="12" lg="4"><DiaSemana /></v-col>
     <v-col cols="12" lg="8"><MapaHoras /></v-col>
-    <v-col cols="12" lg="6"><Descuentos /></v-col>
+    <v-col cols="12" lg="6" v-if="usuarioActual.rol === 'administrador' || usuarioActual.rol === 'gerente'"><Descuentos /></v-col>
     <v-col cols="12" lg="6"><Fiscal /></v-col>
   </v-row>
 </template>

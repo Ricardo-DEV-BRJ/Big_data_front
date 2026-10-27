@@ -38,9 +38,9 @@ async function ingresar() {
         <v-alert v-if="error" class="mb-4" :text="error" type="error" variant="tonal" />
         <v-form @submit.prevent="ingresar">
           <v-text-field v-model.trim="email" autocomplete="username" label="Correo electrónico"
-            required type="email" />
+            required type="email" variant="solo-filled" />
           <v-text-field v-model="password" autocomplete="current-password" label="Contraseña"
-            required type="password" />
+            required type="password" variant="solo-filled" />
           <v-btn block color="primary" :loading="cargando" type="submit">Ingresar</v-btn>
         </v-form>
       </v-card-text>
