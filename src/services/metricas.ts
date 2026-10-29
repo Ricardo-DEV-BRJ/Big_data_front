@@ -3,6 +3,7 @@
  * los datos ya tipados; los filtros vacíos no se envían.
  * Documentación de cada ruta: README de Big_data_TEG, sección "API de métricas".
  */
+import type { TasaVigente } from '@/utils/formato'
 import { apiCall } from '@/config/api'
 
 export interface Filtros {
@@ -16,6 +17,9 @@ export interface Filtros {
   proveedor?: string | null
   segmento?: string | null
   buscar?: string | null
+  sku?: string | null
+  clase?: string | null
+  estado?: string | null
   orden?: string | null
   limite?: number | null
 }
@@ -464,6 +468,94 @@ export interface InventarioMes {
   productos_con_quiebre: number
 }
 
+export type ClaseRotacion = 'A' | 'M' | 'B'
+export type EstadoStock = 'Agotado' | 'Bajo stock mínimo' | 'Reordenar' | 'Normal'
+
+export interface ProductoReposicion {
+  sucursal: string
+  sku: string
+  producto: string
+  categoria: string | null
+  zona_almacen: string | null
+  perecedero: number | null
+  vida_util_dias: number | null
+  stock_actual: number
+  stock_promedio: number
+  unidades_vendidas: number
+  indice_rotacion: number | null
+  clase_rotacion: ClaseRotacion
+  demanda_diaria: number | null
+  desviacion_demanda: number | null
+  lead_time_dias: number | null
+  stock_seguridad: number | null
+  punto_reorden: number | null
+  estado_stock: EstadoStock
+}
+
+export interface Reposicion {
+  clases: { clase_rotacion: ClaseRotacion, productos: number, unidades_vendidas: number, indice_promedio: number | null, indice_minimo: number | null, indice_maximo: number | null, con_alerta: number }[]
+  matriz: { categoria: string, clase_rotacion: ClaseRotacion, productos: number }[]
+  estados: { estado_stock: EstadoStock, productos: number }[]
+  productos: ProductoReposicion[]
+}
+
+export interface Prevision {
+  serie: { mes: string, unidades_reales: number | null, promedio_movil: number | null, suavizamiento: number | null, pronostico: number }[]
+  mape_promedio_movil: number | null
+  mape_suavizamiento: number | null
+  productos: {
+    sku: string
+    producto: string
+    categoria: string | null
+    meses: number
+    unidades_ultimo_mes: number
+    mape_promedio_movil: number | null
+    mape_suavizamiento: number | null
+    modelo_recomendado: string | null
+    mes_siguiente: string
+    prevision_siguiente: number | null
+  }[]
+}
+
+export interface VentaDuplicada {
+  id: number
+  fecha: string
+  fecha_hora: string | null
+  cliente: string | null
+  identificacion: string | null
+  sku: string
+  producto: string | null
+  cantidad: number
+  total: number | null
+  vendedor: string | null
+}
+
+export interface Duplicados {
+  duplicados_exactos: number | null
+  posibles_duplicados: number | null
+  total_filas: number | null
+  posibles_en_periodo: number
+  monto_posibles: number
+  ventas: VentaDuplicada[]
+}
+
+export interface Alerta {
+  tipo: string
+  nivel: 'alta' | 'media'
+  titulo: string
+  detalle: string
+}
+
+export interface Ejecutivo {
+  fecha: string | null
+  ventas_dia: { fecha: string, transacciones: number, venta_neta: number, margen: number } | null
+  ventas_dia_anterior: { fecha: string, transacciones: number, venta_neta: number, margen: number } | null
+  margen: { venta_neta: number | null, margen: number | null, margen_pct: number | null }
+  stock: { productos: number, bajo_minimo: number | null, agotados: number | null, por_reordenar: number | null }
+  duplicados: { exactos: number | null, posibles: number | null }
+  alertas: Alerta[]
+}
+
 export interface Proveedor {
   proveedor: string
   productos: number
@@ -517,4 +609,46 @@ export interface Opciones {
   tipos_cliente: string[]
   segmentos_rfm: string[]
   metodos_pago: string[]
+  tasa_vigente: TasaVigente | null
+}
+
+// --- Tasas de cambio (GET /api/tasas) ------------------------------------------
+
+export interface TasaRegistro {
+  fecha: string
+  hora: string
+  tasa_bcv: number
+  tasa_usdt: number | null
+  tasa_eur: number | null
+  fuente: string
+  origen?: string
+  horas_sin_actualizar?: number | null
+}
+
+export interface ResumenTasas {
+  tasa: TasaRegistro | null
+  vencida: boolean
+  horas_limite: number
+  brecha_usdt_pct?: number | null
+  historial: TasaRegistro[]
+  registradas: (TasaRegistro & { id: number, registrado_en: string })[]
+}
+
+export interface MargenNegativo {
+  sku: string
+  producto: string
+  categoria: string | null
+  ventas: number
+  unidades: number
+  venta_neta: number
+  margen: number
+  ultima_fecha: string | null
+  precio_actual: number | null
+  costo_actual: number | null
+  descuento_maximo: number | null
+}
+
+export async function obtenerApi<T> (ruta: string, filtros: Filtros = {}): Promise<T> {
+  const res = await apiCall(`${ruta}${consulta(filtros)}`, {}) as { data: T }
+  return res.data
 }

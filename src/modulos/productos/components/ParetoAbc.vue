@@ -52,8 +52,8 @@
     :cargando="cargando"
     :error="error"
     icono="mdi-chart-bell-curve-cumulative"
-    subtitulo="% acumulado de la venta neta · todo el período"
-    titulo="Pareto y clasificación ABC"
+    subtitulo="Pareto por ingreso (80/15/5) · distinto de la clase de rotación A/M/B del módulo Inventario"
+    titulo="Pareto y clasificación ABC por ingreso"
     :vacio="productos.length === 0"
     @reintentar="recargar"
   >

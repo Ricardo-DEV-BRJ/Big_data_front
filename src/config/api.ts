@@ -4,14 +4,16 @@ interface SesionGuardada {
   must_change_password?: boolean
 }
 
-function notificarCambioDeSesion(evento: string) {
+function notificarCambioDeSesion (evento: string) {
   window.dispatchEvent(new CustomEvent(evento))
 }
 
-export async function apiCall(endpoint = '', data: unknown = {}, method = 'GET') {
+export async function apiCall (endpoint = '', data: unknown = {}, method = 'GET') {
   const token = localStorage.getItem('token')
   const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-  if (token) headers.Authorization = `Bearer ${token}`
+  if (token) {
+    headers.Authorization = `Bearer ${token}`
+  }
 
   try {
     return await axios.request({

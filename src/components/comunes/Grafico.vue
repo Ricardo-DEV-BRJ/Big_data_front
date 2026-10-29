@@ -25,7 +25,9 @@
   // ApexCharts trata de medir elementos del DOM durante el primer flush reactivo
   // antes de que el componente esté montado en el árbol real.
   const montado = ref(false)
-  onMounted(() => { montado.value = true })
+  onMounted(() => {
+    montado.value = true
+  })
 
   watch(() => [props.opciones, props.series, props.tipo], () => {
     clave.value++

@@ -1,8 +1,52 @@
 /**
  * Formato de números, montos, porcentajes y fechas para todo el panel.
- * Los montos de la API vienen en USD.
+ * Los montos de la API vienen en USD; fmtMoneda y fmtMonedaCorta los muestran en la
+ * moneda elegida en la barra de filtros, convertidos con la tasa vigente.
  */
+import { reactive } from 'vue'
+
 const LOCALE = 'es-VE'
+
+export type CodigoMoneda = 'USD' | 'VES' | 'USDT' | 'EUR'
+
+export interface TasaVigente {
+  fecha: string
+  hora: string
+  tasa_bcv: number
+  tasa_usdt: number | null
+  tasa_eur: number | null
+  fuente: string
+}
+
+const SIMBOLOS: Record<CodigoMoneda, string> = { USD: '$', VES: 'Bs', USDT: 'USDT', EUR: '€' }
+
+export const monedaVista = reactive({ codigo: 'USD' as CodigoMoneda, simbolo: '$', factor: 1 })
+
+// Factor USD -> moneda: a Bs con la BCV; a USDT y EUR pasando por Bs con su tasa.
+export function factorMoneda (codigo: CodigoMoneda, tasa: TasaVigente | null | undefined): number | null {
+  if (codigo === 'USD') {
+    return 1
+  }
+  if (!tasa?.tasa_bcv) {
+    return null
+  }
+  if (codigo === 'VES') {
+    return tasa.tasa_bcv
+  }
+  const destino = codigo === 'USDT' ? tasa.tasa_usdt : tasa.tasa_eur
+  return destino ? tasa.tasa_bcv / destino : null
+}
+
+export function usarMoneda (codigo: CodigoMoneda, tasa: TasaVigente | null | undefined): boolean {
+  const factor = factorMoneda(codigo, tasa)
+  if (factor === null) {
+    return false
+  }
+  monedaVista.codigo = codigo
+  monedaVista.simbolo = SIMBOLOS[codigo]
+  monedaVista.factor = factor
+  return true
+}
 
 const entero = new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 0 })
 const decimal = new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 1 })
@@ -34,13 +78,13 @@ export function fmtMoneda (v: Valor, centavos = false): string {
   if (n === null) {
     return '—'
   }
-  return `$ ${(centavos ? decimalCentavos : entero).format(n)}`
+  return `${monedaVista.simbolo} ${(centavos ? decimalCentavos : entero).format(n * monedaVista.factor)}`
 }
 
 // $ 1,2 M · para tarjetas y ejes donde no cabe el monto completo.
 export function fmtMonedaCorta (v: Valor): string {
   const n = numero(v)
-  return n === null ? '—' : `$ ${compacto.format(n)}`
+  return n === null ? '—' : `${monedaVista.simbolo} ${compacto.format(n * monedaVista.factor)}`
 }
 
 export function fmtCompacto (v: Valor): string {

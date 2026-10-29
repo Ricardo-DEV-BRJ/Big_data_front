@@ -1,6 +1,7 @@
-# Big Data — Front
+# AgroData JM — Front
 
-Dashboard web del prototipo Big Data. Muestra las métricas de ventas que calcula la API
+Panel web del Modelo AgroData JM (Agro Comercializadora JM). Muestra las métricas, modelos analíticos y
+alertas que calcula la API
 (**Big_data_TEG**). La documentación completa del proyecto (arquitectura, ingesta de CSV, data lake,
 cálculo de métricas y todos los endpoints) está en el README de **Big_data_TEG**.
 
@@ -36,24 +37,29 @@ README de Big_data_TEG.
 
 ## El panel
 
-Abre en `http://localhost:8080/panel/resumen` (`/` y `/Dashboard` redirigen ahí). Tiene un menú lateral
-con un módulo por área del negocio, una barra superior (fecha de corte de los datos, **Actualizar**,
-**Recalcular métricas** y tema claro/oscuro) y una barra de **filtros globales** que aplica a todos los
-módulos: período (último mes, 3, 6, 12 meses, todo o personalizado) y sucursal. Algunas tarjetas tienen
-además sus propios controles (orden, categoría, tipo de cliente…).
+Requiere iniciar sesión (`/login`). Cada rol de la Tabla 18 entra a su pantalla y solo ve los módulos de
+su área: Gerencia y Soporte TI → Tablero ejecutivo; Administración → Pagos y monedas; Ventas → Ventas;
+Almacén → Inventario. Tiene un menú lateral, una barra superior (fecha de corte de los datos,
+**Actualizar**, **Recalcular métricas** para Soporte TI y tema claro/oscuro) y una barra de **filtros
+globales** que aplica a todos los módulos: período (último mes, 3, 6, 12 meses, todo o personalizado),
+sucursal y **moneda** (USD, Bs, USDT o EUR: los montos llegan en USD y se convierten con la tasa
+vigente). Algunas tarjetas tienen además sus propios controles (orden, categoría, clase, estado…).
 
 | Módulo | Qué muestra |
 |---|---|
+| **Tablero ejecutivo** | Figura 18: ventas del día, margen bruto, productos bajo stock mínimo, duplicados detectados, ventas vs previsión (promedio móvil y suavizamiento con MAPE), matriz de rotación A/M/B, frecuencia de compra por segmento y alertas activas (stock, vencimiento, duplicados, tasa vencida, margen negativo). Alertas ambientales y papel evitado figuran como fase futura |
 | **Resumen** | KPI con tendencia mensual, evolución de venta y margen, meta del mes (medidor), ventas por segmento y sucursal, productos líderes |
 | **Ventas** | Bruta → neta, IVA, tendencia por día/semana/mes, efecto quincena, avance del mes contra la meta, crecimiento mensual, día de la semana, horas pico (mapa de calor), descuentos e IVA por mes |
-| **Productos** | Ranking por venta, unidades o margen, categorías (treemap), Pareto y ABC, rangos de precio, marcas, devoluciones y productos sin ventas |
-| **Clientes** | Activos y nuevos, concentración, tipos de cliente (V/J/E/G), segmentos RFM con acción sugerida, retención por cohorte y ficha buscable de clientes |
+| **Productos** | Ranking por venta, unidades o margen, categorías (treemap), Pareto y ABC por ingreso, rangos de precio, marcas, devoluciones y productos sin ventas |
+| **Clientes** | Activos y nuevos, concentración, tipos de cliente (Productor / Comercio), segmentos RFM con acción sugerida, retención por cohorte y ficha buscable de clientes |
 | **Cobranza** | Cartera y vencido, antigüedad por tramo y tipo de cliente, flujo de cobro esperado, días de cobro, cartera por sucursal y deudores |
 | **Equipo comercial** | Cumplimiento de metas, venta contra meta por vendedor, medidores por sucursal, desempeño de vendedores, sucursales y metas del mes |
-| **Pagos y monedas** | Peso del dólar, comisiones bancarias, pérdida cambiaria, métodos de pago, USD frente a Bs por mes y tasa de cambio |
-| **Inventario** | Valor, rotación, quiebres de stock, venta perdida y detalle por producto y sucursal |
+| **Pagos y monedas** | Tasas BCV, USDT y EUR con fecha, hora y fuente, alerta de tasa vencida (>24 h), registro de la tasa del día (Administración; se autorrellena con DolarApi y se puede editar), alertas de margen negativo, peso del dólar, comisiones, pérdida cambiaria y métodos de pago |
+| **Inventario** | Rotación A/M/B (fórmula 3), stock de seguridad y punto de reorden (fórmulas 1 y 2) con estado de cada producto, valor, quiebres de stock y venta perdida |
 | **Proveedores** | Compras, órdenes en tránsito, puntualidad, compras frente a ventas y margen |
-| **Calidad de datos** | Reglas de calidad por dataset y historial de recálculos |
+| **Calidad de datos** | Reglas de calidad por dataset, ventas duplicadas (exactas excluidas y posibles) e historial de recálculos |
+| **Bitácora** | Registro de auditoría con usuario, acción, IP y valores anterior y nuevo (Gerencia y Soporte TI) |
+| **Usuarios** | Alta y baja de cuentas con su rol (Soporte TI) |
 
 Estilo inspirado en las plantillas de dashboard de ApexCharts: tarjetas KPI con mini gráfico, áreas
 con degradado, donas, medidores radiales, mapas de calor y treemaps. Los colores de las series siguen
@@ -71,8 +77,8 @@ src/
 │   ├── resumen/
 │   │   ├── ResumenModulo.vue     Pantalla del módulo (arma la cuadrícula)
 │   │   └── components/           Una tarjeta por archivo (KpisResumen, EvolucionVentas, MetaMes…)
-│   ├── ventas/  productos/  clientes/  cobranza/  comercial/
-│   └── pagos/  inventario/  proveedores/  calidad/
+│   ├── ejecutivo/  ventas/  productos/  clientes/  cobranza/  comercial/
+│   └── pagos/  inventario/  proveedores/  calidad/  bitacora/  usuarios/
 ├── layouts/PanelLayout.vue       Menú lateral, barra superior y filtros globales
 ├── components/
 │   ├── comunes/                  TarjetaKpi, TarjetaPanel (carga / error / vacío), Grafico
@@ -81,9 +87,10 @@ src/
 │   ├── useFiltros.ts             Filtros globales (período, sucursal) y opciones de la API
 │   ├── useConsulta.ts            Consulta reactiva: se repite al cambiar filtros
 │   └── useGrafico.ts             Estilo base de ApexCharts y paletas según el tema
-├── services/metricas.ts          Llamadas a /api/metricas y tipos de respuesta
-├── utils/formato.ts              Montos, porcentajes, fechas (es-VE)
-├── router/index.ts               /panel/<módulo>
+├── services/metricas.ts          Llamadas a /api/metricas, /api/tasas y tipos de respuesta
+├── services/auth.ts              Sesión, roles (Tabla 18), grupos de permisos e inicio por rol
+├── utils/formato.ts              Montos (en la moneda elegida), porcentajes, fechas (es-VE)
+├── router/index.ts               /login, /panel/<módulo> y control de acceso por rol
 ├── theme/temaJM.ts               Temas light_JM y dark_JM
 └── config/api.ts                 apiCall(): cliente axios hacia la API
 ```
@@ -132,8 +139,8 @@ apiCall('metricas/opciones')                          // valores para los filtro
 apiCall('metricas/recalcular', {}, 'POST')            // recalcula las métricas
 ```
 
-`apiCall(endpoint, data, method)` concatena `endpoint` a `VITE_API_URL`, envía cookies
-(`withCredentials`) y, si existe la cookie `token`, el encabezado `Authorization: Bearer <token>`.
+`apiCall(endpoint, data, method)` concatena `endpoint` a `VITE_API_URL` y envía el encabezado
+`Authorization: Bearer <token>` con el token guardado al iniciar sesión; un `401` cierra la sesión.
 Devuelve la respuesta de axios: los datos vienen en `result.data`; si hay error, el mensaje viene en
 `error.response.data.error`.
 
@@ -142,5 +149,10 @@ Todas las rutas de métricas y sus filtros (`desde`, `hasta`, `mes`, `sucursal`,
 
 ## Pendiente
 
-- Sin autenticación (igual que la API).
 - El paquete principal pesa ~1,4 MB (440 kB comprimido) por Vuetify y ApexCharts; los módulos ya se cargan por separado.
+- La conversión de moneda usa la tasa vigente para todo el período (no la tasa de cada día).
+
+## Entrega
+
+No incluir `.env`, `node_modules/` ni `dist/` (están en `.gitignore`):
+`git archive --format=zip -o ../AgroData_JM_front.zip HEAD`.

@@ -11,7 +11,7 @@
   import { fmtMoneda, fmtMonedaCorta, fmtPct } from '@/utils/formato'
 
   // Orden fijo: cada tipo de cliente conserva su color en todo el panel.
-  const TIPOS = ['Persona natural', 'Empresa', 'Gobierno', 'Extranjero']
+  const TIPOS = ['Productor', 'Comercio']
 
   const { filtros } = useFiltros()
   const { datos, cargando, error, recargar } = useConsulta(() => obtener<Segmento[]>('/segmentos', filtros.value))

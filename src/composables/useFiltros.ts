@@ -32,12 +32,12 @@ const opciones = ref<Opciones | null>(null)
 const errorOpciones = ref('')
 let cargaOpciones: Promise<void> | null = null
 
-function iso(fecha: Date): string {
+function iso (fecha: Date): string {
   return fecha.toISOString().slice(0, 10)
 }
 
 // Primer día del mes que está n meses antes del mes de la fecha de corte.
-function inicioDeMes(corte: string, mesesAtras: number): string {
+function inicioDeMes (corte: string, mesesAtras: number): string {
   const [a, m] = corte.split('-').map(Number)
   return iso(new Date(Date.UTC(a!, m! - 1 - mesesAtras, 1)))
 }
@@ -67,7 +67,7 @@ const mesActual = computed<string | null>(() => {
   return fin ? fin.slice(0, 7) : null
 })
 
-function cargarOpciones(forzar = false): Promise<void> {
+function cargarOpciones (forzar = false): Promise<void> {
   if (!cargaOpciones || forzar) {
     cargaOpciones = obtener<Opciones>('/opciones')
       .then(datos => {
@@ -82,11 +82,11 @@ function cargarOpciones(forzar = false): Promise<void> {
   return cargaOpciones
 }
 
-function refrescar() {
+function refrescar () {
   version.value++
   return cargarOpciones(true)
 }
 
-export function useFiltros() {
+export function useFiltros () {
   return { estado, opciones, errorOpciones, rango, filtros, mesActual, version, cargarOpciones, refrescar }
 }
