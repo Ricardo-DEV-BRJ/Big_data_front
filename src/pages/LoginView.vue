@@ -35,6 +35,9 @@
       <v-card-title class="text-h5">Iniciar sesión</v-card-title>
 
       <v-card-text>
+        <v-col cols="12" class="d-flex justify-center">
+          <v-img src="@/assets/AgroJM_logo_HD.png" alt="AgroData JM" class="mb-4" width="200"/>
+        </v-col>
         <p class="text-body-2 text-medium-emphasis mb-5">Accede al panel de AgroData JM con tu cuenta.</p>
 
         <v-alert
